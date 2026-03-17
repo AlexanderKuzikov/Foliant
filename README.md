@@ -1,58 +1,58 @@
 # Foliant
 
-A silent Windows utility that automatically processes PDF task folders — rasterizing pages and assembling them into optimized print-ready documents using smart layout logic.
+Фоновая утилита для Windows, которая автоматически обрабатывает папки с PDF-задачами — растрирует страницы и собирает их в готовый к печати документ с автоматическим выбором макета.
 
-## How It Works
+## Как это работает
 
-Foliant monitors a configured working directory for task subfolders. Each subfolder is treated as an independent task containing one or more PDF files. On launch, Foliant processes all pending tasks and notifies the user upon completion via a Windows toast notification.
+Foliant сканирует рабочую директорию на наличие вложенных папок. Каждая папка — это отдельная задача, содержащая один или несколько PDF-файлов. При запуске утилита обрабатывает все задачи и уведомляет пользователя о завершении через системное уведомление Windows.
 
-### Layout Logic
+### Логика выбора макета
 
-The output layout is selected automatically based on the total page count across all PDFs in a task:
+Макет выбирается автоматически на основе суммарного количества страниц всех PDF в задаче:
 
-| Total Pages | Layout | Orientation | Output DPI |
+| Кол-во страниц | Макет | Ориентация листа | DPI вывода |
 |---|---|---|---|
-| ≤ 19 | 1 page per sheet | Portrait | 200 DPI |
-| 20 – 38 | 2 pages per sheet | Landscape | 300 DPI |
-| > 38 | 4 pages per sheet (2×2) | Portrait | 600 DPI |
+| ≤ 19 | 1 страница на лист | Книжная | 200 DPI |
+| 20 – 38 | 2 страницы на лист | Альбомная | 300 DPI |
+| > 38 | 4 страницы на лист (2×2) | Книжная | 600 DPI |
 
-### Working Directory Structure
+### Структура рабочей директории
 
 ```
 C:/tasks/
 ├── order_001/
 │   ├── document.pdf
-│   └── processed_order_001.pdf   ← generated output
+│   └── processed_order_001.pdf   ← результат
 ├── order_002/
 │   ├── part1.pdf
 │   ├── part2.pdf
-│   └── processed_order_002.pdf   ← generated output
+│   └── processed_order_002.pdf   ← результат
 └── logs/
     └── run_2026-03-17T10-35-00.log
 ```
 
-## Requirements
+## Требования
 
-- [Node.js](https://nodejs.org/) 18 or higher
+- [Node.js](https://nodejs.org/) версии 18 и выше
 - Windows 10 / 11
 
-## Installation
+## Установка
 
 ```bash
-# Clone or download the repository
+# Клонировать или скачать репозиторий
 git clone https://github.com/AlexanderKuzikov/Foliant.git
 cd Foliant
 
-# Install dependencies
+# Установить зависимости
 npm install
 
-# Build
+# Собрать проект
 npm run build
 ```
 
-## Configuration
+## Настройка
 
-Edit `config.json` before first use:
+Перед первым запуском отредактируйте `config.json`:
 
 ```json
 {
@@ -87,35 +87,35 @@ Edit `config.json` before first use:
 }
 ```
 
-| Option | Description |
+| Параметр | Описание |
 |---|---|
-| `workDir` | Root directory scanned for task folders |
-| `logDir` | Directory where log files are saved |
-| `outputFilePrefix` | Prefix for generated PDF filenames |
-| `deleteSourcePdfs` | Remove source PDFs after processing |
-| `maxPagesPerDocument` | Page threshold for layout selection |
-| `layout.*.rasterDpi` | Rasterization DPI per layout profile |
+| `workDir` | Рабочая директория с папками задач |
+| `logDir` | Директория для сохранения логов |
+| `outputFilePrefix` | Префикс имени выходного файла |
+| `deleteSourcePdfs` | Удалять исходные PDF после обработки |
+| `maxPagesPerDocument` | Порог страниц для выбора макета |
+| `layout.*.rasterDpi` | DPI растрировки для каждого макета |
 
-Paths support both forward slashes (`C:/tasks`) and backslashes (`C:\tasks`).
+Пути поддерживают как прямой слэш (`C:/tasks`), так и обратный (`C:\tasks`).
 
-## Usage
+## Использование
 
-**For end users** — double-click `run.vbs`. No terminal window will appear. A Windows notification will appear when all tasks are complete.
+**Для пользователя** — двойной клик по `run.vbs`. Окно терминала не появляется. По завершении всех задач придёт системное уведомление Windows.
 
-**For developers:**
+**Для разработчика:**
 
 ```bash
-# Development mode (no build required)
+# Режим разработки (без предварительной сборки)
 npm run dev
 
-# Production
+# Продакшн
 npm run build
 npm start
 ```
 
-## Logging
+## Логирование
 
-Each run creates a timestamped log file in `logDir`:
+Каждый запуск создаёт лог-файл с временной меткой в директории `logDir`:
 
 ```
 [2026-03-17 10:35:00] INFO: PDF Processor started
@@ -129,15 +129,15 @@ Each run creates a timestamped log file in `logDir`:
 [2026-03-17 10:35:03] INFO: Task done in 3.21s
 ```
 
-## Tech Stack
+## Стек технологий
 
-- **[pdf-lib](https://pdf-lib.js.org/)** — PDF assembly and page composition
-- **[@hyzyla/pdfium](https://github.com/hyzyla/pdfium)** — PDF rasterization via Google PDFium (WebAssembly)
-- **[winston](https://github.com/winstonjs/winston)** — Logging
-- **[node-notifier](https://github.com/mikaelbr/node-notifier)** — Windows toast notifications
+- **[pdf-lib](https://pdf-lib.js.org/)** — сборка PDF и компоновка страниц
+- **[@hyzyla/pdfium](https://github.com/hyzyla/pdfium)** — растрировка через Google PDFium (WebAssembly)
+- **[winston](https://github.com/winstonjs/winston)** — логирование
+- **[node-notifier](https://github.com/mikaelbr/node-notifier)** — системные уведомления Windows
 
-## License
+## Лицензия
 
-Licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
+Распространяется под лицензией [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0).
 
 Copyright 2026 Alexander Kuzikov
