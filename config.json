@@ -1,9 +1,15 @@
 {
   "workDir": "C:/tasks",
   "logDir": "C:/tasks/logs",
-  "outputFilePrefix": "processed",
+  "outputFilePrefix": "f_",
   "deleteSourcePdfs": false,
   "maxPagesPerDocument": 19,
+  "margins": {
+    "top": 15,
+    "right": 10,
+    "bottom": 15,
+    "left": 10
+  },
   "layout": {
     "single": {
       "pagesPerSheet": 1,
@@ -19,15 +25,15 @@
       "rows": 1,
       "orientation": "landscape",
       "rasterDpi": 300,
-      "jpegQuality": 82
+      "jpegQuality": 80
     },
     "fourPerSheet": {
       "pagesPerSheet": 4,
       "cols": 2,
       "rows": 2,
       "orientation": "portrait",
-      "rasterDpi": 600,
-      "jpegQuality": 85
+      "rasterDpi": 300,
+      "jpegQuality": 80
     }
   }
 }

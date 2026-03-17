@@ -1,54 +1,58 @@
 import { promises as fs } from 'fs';
-import path from 'path';
-import { exec } from 'child_process';
+import path, { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { loadConfig } from './config.js';
 import { createLogger } from './logger.js';
 import { processTask } from './taskProcessor.js';
+import { TrayManager } from './tray.js';
+import { ensureIcon } from './icon.js';
 
-function notify(title: string, message: string): void {
-  const script = `
-    Add-Type -AssemblyName System.Windows.Forms;
-    $notify = New-Object System.Windows.Forms.NotifyIcon;
-    $notify.Icon = [System.Drawing.SystemIcons]::Information;
-    $notify.Visible = $true;
-    $notify.ShowBalloonTip(5000, '${title}', '${message}', [System.Windows.Forms.ToolTipIcon]::Info);
-    Start-Sleep -Milliseconds 5000;
-    $notify.Dispose();
-  `.replace(/\n\s+/g, ' ').trim();
-
-  exec(`powershell -NoProfile -WindowStyle Hidden -Command "${script}"`);
-}
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function main(): Promise<void> {
   const config = loadConfig();
   const logger = createLogger(config.logDir);
-  const resolvedLogDir = path.resolve(config.logDir);
 
-  logger.info('PDF Processor started');
+  const iconPath = path.resolve(__dirname, '..', 'assets', 'icon.ico');
+  await ensureIcon(iconPath);
+
+  const tray = new TrayManager(iconPath, config.workDir, config.logDir);
+  tray.start();
+
+  // Небольшая пауза чтобы трей успел инициализироваться
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  logger.info('Foliant started');
   logger.info(`workDir: ${config.workDir}`);
 
   try {
+    const resolvedLogDir = path.resolve(config.logDir);
     const entries = await fs.readdir(config.workDir, { withFileTypes: true });
 
     const taskDirs = entries
       .filter(e => {
         if (!e.isDirectory()) return false;
         if (e.name.startsWith('_') || e.name.startsWith('.')) return false;
-        const fullPath = path.resolve(config.workDir, e.name);
-        return fullPath !== resolvedLogDir;
+        return path.resolve(config.workDir, e.name) !== resolvedLogDir;
       })
       .map(e => path.join(config.workDir, e.name));
 
     if (taskDirs.length === 0) {
       logger.info('No task folders found. Exiting.');
+      tray.setStatus('Нет задач');
+      setTimeout(() => tray.kill(), 3000);
       return;
     }
 
-    logger.info(`Found ${taskDirs.length} task(s): ${taskDirs.map(d => path.basename(d)).join(', ')}`);
+    logger.info(`Found ${taskDirs.length} task(s)`);
 
     const results = [];
-    for (const taskDir of taskDirs) {
-      const result = await processTask(taskDir, config, logger);
+    for (let i = 0; i < taskDirs.length; i++) {
+      const taskName = path.basename(taskDirs[i]);
+      tray.setStatus(`Обработка: ${taskName} (${i + 1}/${taskDirs.length})`);
+      logger.info(`Processing task ${i + 1}/${taskDirs.length}: ${taskName}`);
+
+      const result = await processTask(taskDirs[i], config, logger);
       results.push(result);
     }
 
@@ -57,18 +61,18 @@ async function main(): Promise<void> {
 
     logger.info(`All done — success: ${succeeded}, failed: ${failed}`);
 
-    notify(
-      failed === 0 ? 'Foliant ✅' : 'Foliant ⚠️',
+    tray.setStatus(
       failed === 0
-        ? `${succeeded} task(s) completed successfully`
-        : `${succeeded} OK, ${failed} failed. Check logs.`
+        ? `Готово ✓ (${succeeded} задач)`
+        : `Ошибки: ${failed} из ${succeeded + failed}`
     );
+
+    setTimeout(() => tray.kill(), 10_000);
 
   } catch (error) {
     const message = (error as Error).message;
     logger.error(`Fatal: ${message}`);
-    notify('Foliant ❌', `Fatal error: ${message}`);
-    process.exit(1);
+    tray.setStatus(`Ошибка: ${message}`);
   }
 }
 

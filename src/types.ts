@@ -4,6 +4,14 @@ export interface LayoutProfile {
   rows: number;
   orientation: 'portrait' | 'landscape';
   rasterDpi: number;
+  jpegQuality: number;
+}
+
+export interface Margins {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
 }
 
 export interface AppConfig {
@@ -12,6 +20,7 @@ export interface AppConfig {
   outputFilePrefix: string;
   deleteSourcePdfs: boolean;
   maxPagesPerDocument: number;
+  margins: Margins;
   layout: {
     single: LayoutProfile;
     twoPerSheet: LayoutProfile;

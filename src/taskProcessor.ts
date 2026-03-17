@@ -18,7 +18,6 @@ export async function processTask(
   const tempDir = path.join(taskDir, '_tmp');
 
   try {
-    // 1. Найти PDF-файлы
     const entries = await fs.readdir(taskDir);
     const pdfFiles = entries
       .filter(f => f.toLowerCase().endsWith('.pdf'))
@@ -31,7 +30,6 @@ export async function processTask(
 
     logger.info(`PDFs: ${pdfFiles.map(f => path.basename(f)).join(', ')}`);
 
-    // 2. Подсчёт страниц
     let totalPages = 0;
     for (const pdfPath of pdfFiles) {
       const bytes = await fs.readFile(pdfPath);
@@ -40,30 +38,28 @@ export async function processTask(
     }
     logger.info(`Total pages: ${totalPages}`);
 
-    // 3. Выбор макета
     const layoutKey = selectLayout(totalPages, config.maxPagesPerDocument);
     const layout = config.layout[layoutKey];
-    logger.info(`Layout: ${layoutKey} | ${layout.pagesPerSheet} per sheet | ${layout.rasterDpi} DPI`);
+    logger.info(`Layout: ${layoutKey} | ${layout.pagesPerSheet} per sheet | ${layout.rasterDpi} DPI | quality ${layout.jpegQuality}`);
 
-    // 4. Растрировка
     const imagePaths = await rasterizePdfs(
       pdfFiles,
       tempDir,
       layout.rasterDpi,
+      layout.jpegQuality,
       logger
     );
     logger.info(`Rasterized: ${imagePaths.length} images`);
 
-    // 5. Сборка PDF
-    const pdfBytes = await buildPdf(imagePaths, layout);
+    const pdfBytes = await buildPdf(imagePaths, layout, config.margins);
 
-    // 6. Сохранение
-    const outputFilename = `${config.outputFilePrefix}_${taskName}.pdf`;
+    const outputFilename = config.outputFilePrefix
+      ? `${config.outputFilePrefix}_${taskName}.pdf`
+      : `${taskName}.pdf`;
     const outputPath = path.join(taskDir, outputFilename);
     await fs.writeFile(outputPath, pdfBytes);
     logger.info(`Saved: ${outputFilename}`);
 
-    // 7. Удаление источников (если включено)
     if (config.deleteSourcePdfs) {
       for (const pdfPath of pdfFiles) {
         await fs.unlink(pdfPath);

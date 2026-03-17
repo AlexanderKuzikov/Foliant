@@ -11,39 +11,43 @@ async function getLibrary(): Promise<PDFiumLibrary> {
   return library;
 }
 
-async function renderToJpeg(options: PDFiumPageRenderOptions): Promise<Buffer> {
-  return sharp(options.data, {
-    raw: {
-      width: options.width,
-      height: options.height,
-      channels: 4,
-    },
-  })
-    .jpeg({ quality: 90 })
-    .toBuffer();
+function makeJpegRenderer(quality: number) {
+  return async (options: PDFiumPageRenderOptions): Promise<Buffer> => {
+    return sharp(options.data, {
+      raw: {
+        width: options.width,
+        height: options.height,
+        channels: 4,
+      },
+    })
+      .jpeg({ quality })
+      .toBuffer();
+  };
 }
 
 export async function rasterizePdfs(
   pdfPaths: string[],
   tempDir: string,
   dpi: number,
+  quality: number,
   logger: winston.Logger
 ): Promise<string[]> {
   await fs.mkdir(tempDir, { recursive: true });
 
   const lib = await getLibrary();
   const scale = dpi / 72;
+  const render = makeJpegRenderer(quality);
   const allImages: string[] = [];
 
   for (let fileIdx = 0; fileIdx < pdfPaths.length; fileIdx++) {
     const pdfPath = pdfPaths[fileIdx];
-    logger.info(`Rasterizing: ${path.basename(pdfPath)} at ${dpi} DPI`);
+    logger.info(`Rasterizing: ${path.basename(pdfPath)} at ${dpi} DPI, quality ${quality}`);
 
     const pdfBuffer = await fs.readFile(pdfPath);
     const document = await lib.loadDocument(pdfBuffer);
 
     for (const page of document.pages()) {
-      const image = await page.render({ scale, render: renderToJpeg });
+      const image = await page.render({ scale, render });
 
       const imageName = `f${String(fileIdx).padStart(3, '0')}_p${String(page.number).padStart(4, '0')}.jpg`;
       const imagePath = path.join(tempDir, imageName);
