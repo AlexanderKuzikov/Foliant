@@ -31,7 +31,7 @@ export class TrayManager {
         title: '',
         tooltip: 'Foliant',
         items: [
-          { title: 'Запуск...', tooltip: '', checked: false, enabled: false },
+          { title: 'Запуск...', tooltip: '', checked: false, enabled: true },
           SEPARATOR,
           { title: 'Открыть папку задач', tooltip: '', checked: false, enabled: true },
           { title: 'Открыть логи',        tooltip: '', checked: false, enabled: true },
@@ -57,7 +57,7 @@ export class TrayManager {
     this.systray.sendAction({
       type: 'update-item',
       seq_id: 0,
-      item: { title: text, tooltip: '', checked: false, enabled: false },
+      item: { title: text, tooltip: '', checked: false, enabled: true },
     });
   }
 
