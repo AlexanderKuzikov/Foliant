@@ -20,7 +20,11 @@ export async function processTask(
   try {
     const entries = await fs.readdir(taskDir);
     const pdfFiles = entries
-      .filter(f => f.toLowerCase().endsWith('.pdf'))
+      .filter(f => {
+        if (!f.toLowerCase().endsWith('.pdf')) return false;
+        if (config.outputFilePrefix && f.startsWith(config.outputFilePrefix)) return false;
+        return true;
+      })
       .sort()
       .map(f => path.join(taskDir, f));
 

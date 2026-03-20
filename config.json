@@ -1,8 +1,8 @@
 {
   "workDir": "C:/tasks",
   "logDir": "C:/tasks/logs",
-  "outputFilePrefix": "f_",
-  "deleteSourcePdfs": false,
+  "outputFilePrefix": "fol_",
+  "deleteSourcePdfs": true,
   "maxPagesPerDocument": 19,
   "margins": {
     "top": 15,
