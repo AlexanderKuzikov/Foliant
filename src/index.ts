@@ -4,26 +4,34 @@ import { fileURLToPath } from 'url';
 import { loadConfig } from './config.js';
 import { createLogger } from './logger.js';
 import { processTask } from './taskProcessor.js';
-import { TrayManager } from './tray.js';
-import { ensureIcon } from './icon.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const isWindows = process.platform === 'win32';
 
 async function main(): Promise<void> {
   const config = loadConfig();
   const logger = createLogger(config.logDir);
 
-  const iconPath = path.resolve(__dirname, '..', 'assets', 'icon.ico');
-  await ensureIcon(iconPath);
+  let tray: any = null;
 
-  const tray = new TrayManager(iconPath, config.workDir, config.logDir);
-  tray.start();
-
-  // Небольшая пауза чтобы трей успел инициализироваться
-  await new Promise(resolve => setTimeout(resolve, 500));
+  if (isWindows) {
+    const { TrayManager } = await import('./tray.js');
+    const { ensureIcon } = await import('./icon.js');
+    const iconPath = path.resolve(__dirname, '..', 'assets', 'icon.ico');
+    await ensureIcon(iconPath);
+    tray = new TrayManager(iconPath, config.workDir, config.logDir);
+    tray.start();
+    await new Promise(resolve => setTimeout(resolve, 500));
+  }
 
   logger.info('Foliant started');
+  logger.info(`Platform: ${process.platform}`);
   logger.info(`workDir: ${config.workDir}`);
+
+  const setStatus = (text: string) => {
+    logger.info(text);
+    tray?.setStatus(text);
+  };
 
   try {
     const resolvedLogDir = path.resolve(config.logDir);
@@ -39,9 +47,11 @@ async function main(): Promise<void> {
 
     if (taskDirs.length === 0) {
       logger.info('No task folders found. Exiting.');
-      tray.setStatus('Нет задач');
-      setTimeout(() => tray.kill(), 3000);
-      return;
+      if (isWindows) {
+        tray?.setStatus('Нет задач');
+        setTimeout(() => tray?.kill(), 3000);
+      }
+      process.exit(0);
     }
 
     logger.info(`Found ${taskDirs.length} task(s)`);
@@ -49,8 +59,7 @@ async function main(): Promise<void> {
     const results = [];
     for (let i = 0; i < taskDirs.length; i++) {
       const taskName = path.basename(taskDirs[i]);
-      tray.setStatus(`Обработка: ${taskName} (${i + 1}/${taskDirs.length})`);
-      logger.info(`Processing task ${i + 1}/${taskDirs.length}: ${taskName}`);
+      setStatus(`Обработка: ${taskName} (${i + 1}/${taskDirs.length})`);
 
       const result = await processTask(taskDirs[i], config, logger);
       results.push(result);
@@ -61,18 +70,26 @@ async function main(): Promise<void> {
 
     logger.info(`All done — success: ${succeeded}, failed: ${failed}`);
 
-    tray.setStatus(
-      failed === 0
-        ? `Готово ✓ (${succeeded} задач)`
-        : `Ошибки: ${failed} из ${succeeded + failed}`
-    );
-
-    setTimeout(() => tray.kill(), 10_000);
+    if (isWindows) {
+      tray?.setStatus(
+        failed === 0
+          ? `Готово ✓ (${succeeded} задач)`
+          : `Ошибки: ${failed} из ${succeeded + failed}`
+      );
+      setTimeout(() => tray?.kill(), 10_000);
+    } else {
+      process.exit(failed > 0 ? 1 : 0);
+    }
 
   } catch (error) {
     const message = (error as Error).message;
     logger.error(`Fatal: ${message}`);
-    tray.setStatus(`Ошибка: ${message}`);
+
+    if (isWindows) {
+      tray?.setStatus(`Ошибка: ${message}`);
+    } else {
+      process.exit(1);
+    }
   }
 }
 
