@@ -16,7 +16,7 @@
       "cols": 1,
       "rows": 1,
       "orientation": "portrait",
-      "rasterDpi": 200,
+      "rasterDpi": 250,
       "jpegQuality": 80
     },
     "twoPerSheet": {
@@ -24,16 +24,16 @@
       "cols": 2,
       "rows": 1,
       "orientation": "landscape",
-      "rasterDpi": 300,
-      "jpegQuality": 80
+      "rasterDpi": 180,
+      "jpegQuality": 60
     },
     "fourPerSheet": {
       "pagesPerSheet": 4,
       "cols": 2,
       "rows": 2,
       "orientation": "portrait",
-      "rasterDpi": 300,
-      "jpegQuality": 80
+      "rasterDpi": 120,
+      "jpegQuality": 50
     }
   }
 }
