@@ -60,7 +60,7 @@ export async function processTask(
     const outputFilename = config.outputFilePrefix
       ? `${config.outputFilePrefix}_${taskName}.pdf`
       : `${taskName}.pdf`;
-    const outputPath = path.join(taskDir, outputFilename);
+    const outputPath = path.join(config.workDir, outputFilename);
     await fs.writeFile(outputPath, pdfBytes);
     logger.info(`Saved: ${outputFilename}`);
 
