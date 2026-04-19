@@ -41,8 +41,8 @@ C:/tasks/
 │   ├── part2.pdf
 └── logs/
 │   └── run_2026-03-17T10-35-00.log
-└── fol__order_001.pdf   ← результат
-└── fol__order_002.pdf   ← результат
+└── order_001.pdf   ← результат
+└── order_002.pdf   ← результат
 ```
 
 ## Требования
@@ -72,7 +72,7 @@ npm run build
 {
   "workDir": "C:/tasks",
   "logDir": "C:/tasks/logs",
-  "outputFilePrefix": "fol_",
+  "outputFilePrefix": "",
   "deleteSourcePdfs": false,
   "maxPagesPerDocument": 19,
   "margins": {
