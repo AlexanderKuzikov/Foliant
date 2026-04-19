@@ -3,6 +3,7 @@ export interface LayoutProfile {
   cols: number;
   rows: number;
   orientation: 'portrait' | 'landscape';
+  rotateContent?: 0 | 90 | 180 | 270;
   rasterDpi: number;
   jpegQuality: number;
 }

@@ -1,4 +1,4 @@
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, degrees } from 'pdf-lib';
 import { promises as fs } from 'fs';
 import type { LayoutProfile, Margins } from './types.js';
 
@@ -6,7 +6,6 @@ const A4 = { width: 595.28, height: 841.89 };
 const MM_TO_PT = 72 / 25.4;
 
 interface Size { width: number; height: number; }
-interface Placement { x: number; y: number; width: number; height: number; }
 
 function getPageSize(orientation: 'portrait' | 'landscape'): Size {
   return orientation === 'portrait'
@@ -23,18 +22,6 @@ function marginsInPt(margins: Margins) {
   };
 }
 
-function fitInCell(img: Size, cell: Size, offsetX: number, offsetY: number): Placement {
-  const scale = Math.min(cell.width / img.width, cell.height / img.height);
-  const w = img.width * scale;
-  const h = img.height * scale;
-  return {
-    x: offsetX + (cell.width - w) / 2,
-    y: offsetY + (cell.height - h) / 2,
-    width: w,
-    height: h,
-  };
-}
-
 export async function buildPdf(
   imagePaths: string[],
   layout: LayoutProfile,
@@ -44,12 +31,14 @@ export async function buildPdf(
   const pageSize = getPageSize(layout.orientation);
   const m = marginsInPt(margins);
 
-  // Рабочая область внутри полей
   const contentWidth  = pageSize.width  - m.left - m.right;
   const contentHeight = pageSize.height - m.top  - m.bottom;
 
   const cellWidth  = contentWidth  / layout.cols;
   const cellHeight = contentHeight / layout.rows;
+
+  const rotate = layout.rotateContent ?? 0;
+  const isRotated = rotate === 90 || rotate === 270;
 
   for (let i = 0; i < imagePaths.length; i += layout.pagesPerSheet) {
     const page = doc.addPage([pageSize.width, pageSize.height]);
@@ -66,14 +55,32 @@ export async function buildPdf(
       const offsetX = m.left + col * cellWidth;
       const offsetY = m.bottom + (layout.rows - 1 - row) * cellHeight;
 
-      const placement = fitInCell(
-        { width: img.width, height: img.height },
-        { width: cellWidth, height: cellHeight },
-        offsetX,
-        offsetY
-      );
+      let drawX: number, drawY: number, drawW: number, drawH: number;
 
-      page.drawImage(img, placement);
+      if (isRotated) {
+        // При rotate 90° CCW: visual_width = drawH, visual_height = drawW
+        // Вписываем visual (drawH x drawW) в ячейку (cellWidth x cellHeight):
+        const scale = Math.min(cellHeight / img.width, cellWidth / img.height);
+        drawW = img.width  * scale;
+        drawH = img.height * scale;
+        // Центрируем: visual x_range=[drawX-drawH..drawX], y_range=[drawY..drawY+drawW]
+        drawX = offsetX + (cellWidth  - drawH) / 2 + drawH;
+        drawY = offsetY + (cellHeight - drawW) / 2;
+      } else {
+        const scale = Math.min(cellWidth / img.width, cellHeight / img.height);
+        drawW = img.width  * scale;
+        drawH = img.height * scale;
+        drawX = offsetX + (cellWidth  - drawW) / 2;
+        drawY = offsetY + (cellHeight - drawH) / 2;
+      }
+
+      page.drawImage(img, {
+        x:      drawX,
+        y:      drawY,
+        width:  drawW,
+        height: drawH,
+        rotate: degrees(rotate),
+      });
     }
   }
 
